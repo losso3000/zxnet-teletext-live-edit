@@ -17,7 +17,9 @@ public class UrlTranscoder {
   private byte[] pageBuffer = new byte[EDITOR_ROWS * EDITOR_COLS];
 
   // Only 24 rows, but with 2 MPAG bytes before each row
-  private byte[] sendBuffer = new byte[SEND_ROWS * SEND_COLS + FILLING_HEADER_BYTES];
+  private byte[] sendBuffer = new byte[SEND_ROWS * SEND_COLS];
+
+  private byte[] fillingBuffer = new byte[FILLING_HEADER_BYTES];
 
   private static int[] mpags = {
       0x02, 0x15, // magazine 1 row  0
@@ -46,8 +48,8 @@ public class UrlTranscoder {
       0xc7, 0x9b, // magazine 1 row 23
   };
 
-  private static int[] fillingHeader = {
-    0x02, 0x15, 0xea, 0xea, 0x15, 0x15, 0x15, 0x15, 0x02, 0x15
+  private static int[] fillingHeaderTemplate = {
+    0x02, 0x15, 0xea, 0xea, 0x15, 0x15, 0x15, 0x15, 0x02, 0x15, 0x15, 0x15
   };
 
   public byte[] transcodeFromUrl(String url) {
@@ -55,14 +57,25 @@ public class UrlTranscoder {
     if (buf7 == null) return null;
     byte[] buf8 = convertTo8Bit(buf7, pageBuffer);
     for (int i = 0; i < buf8.length; i++) {
-      buf8[i] = 'e';
+      // buf8[i] = (byte) ('A' + (i % 21));
     }
     byte[] sendBuf = convertToSendBuffer(buf8, sendBuffer);
     return sendBuf;
   }
 
+  public byte[] createFillingHeader(byte[] buf) {
+    for (int i = 0; i < FILLING_HEADER_BYTES; i++) {
+      if (i < fillingHeaderTemplate.length) {
+        fillingBuffer[i] = (byte) fillingHeaderTemplate[i];
+      } else {
+        fillingBuffer[i] = buf[i];
+      }
+    }
+    return fillingBuffer;
+  }
+
   static byte[] extractDataFromUrl(String url, byte[] buf) {
-    int from = url.indexOf("#0:") + 3;
+    int from = url.indexOf("#") + 3;
     int to   = url.indexOf(":PS");
     if (from < 0 || to < 0 || to <= from) {
       return null;
@@ -71,23 +84,32 @@ public class UrlTranscoder {
       .replace('_', '/')
       .replace('-', '+')
       .getBytes();
+    byte[] x = Base64.getDecoder().decode(urlDataBase64);
     Base64.getDecoder().decode(urlDataBase64, buf);
     return buf;
   }
 
   static byte[] convertTo8Bit(byte[] buf7, byte[] buf8) {
     int targetByte = 0;
+
     int targetBytePos = 0;
     int sourceBytePos = 0;
-    int sourceBitPos = 7;
+    int targetBit = 0b0100_0000;
+    int sourceBit = 0b1000_0000;
+
     while (sourceBytePos < buf7.length) {
-      boolean set = (buf7[sourceBytePos] & (1 << sourceBitPos)) != 0;
+      boolean set = (buf7[sourceBytePos] & sourceBit) != 0;
       if (set) {
-        targetByte |= 1 << sourceBitPos;
+        targetByte |= targetBit;
       }
-      if (--sourceBitPos < 0) {
-        sourceBitPos = 7;
+      sourceBit >>= 1;
+      targetBit >>= 1;
+      if (sourceBit == 0) {
+        sourceBit = 0b1000_0000;
         sourceBytePos++;
+      }
+      if (targetBit == 0) {
+        targetBit = 0b0100_0000;
         buf8[targetBytePos++] = (byte) targetByte;
         targetByte = 0;
       }
@@ -99,7 +121,7 @@ public class UrlTranscoder {
     int k = i ^ (i >> 1);
     k ^= (k >> 2);
     k ^= (k >> 4);
-    return (k & 1) == 0 ? i : i|0x80;
+    return (k & 1) != 0 ? i : i|0x80;
   }
 
   static byte[] convertToSendBuffer(byte[] src, byte[] dst) {
@@ -117,13 +139,6 @@ public class UrlTranscoder {
     for (int y = 0; y < SEND_ROWS; y++) {
       dst[y * SEND_COLS + 0] = (byte) mpags[y * 2 + 0];
       dst[y * SEND_COLS + 1] = (byte) mpags[y * 2 + 1];
-    }
-    // Filling header (page 0x1FF, content as in first row)
-    for (int x = 8; x < EDITOR_COLS; x++) {
-      dst[SEND_ROWS * SEND_COLS + x + 2] = src[x];
-    }
-    for (int i = 0; i < fillingHeader.length; i++) {
-      dst[SEND_ROWS * SEND_COLS + i] = (byte) fillingHeader[i];
     }
     return dst;
   }
