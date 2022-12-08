@@ -40,17 +40,26 @@ class UrlTranscoderTest {
   @Test
   void convertTo8Bit() {
     assertConvert(
+        // Expect this array of bytes (7 bits per byte)
+        //
         //   12345678 12345678 12345678 12345678 12345678 12345678 12345678 12345678
-            "01000001 00000000 01111111 00000000 01111111 00000000 01111111 00000000",
+            "01111111 00000000 01111111 00000000 01111111 00000000 01111111 00000000",
+        //
+        // Converted from this array of bytes (7 bits packed)
+        //
         //   12345671 23456712 34567123 45671234 56712345 67123456 71234567
-            "10000010 00000011 11111000 00001111 11100000 00111111 10000000"
+            "11111110 00000011 11111000 00001111 11100000 00111111 10000000"
+    );
+    assertConvert(
+            "00000000 01111111 00000000 01111111 00000000 01111111 00000000 01111111",
+            "00000001 11111100 00000111 11110000 00011111 11000000 01111111"
     );
   }
 
   private void assertConvert(String expectedFormatted, String bits7) {
     var bytes7 = toByteArray(bits7);
-    assertEquals(bits7.split(" ").length, bytes7.length, "internal test setup: toByteArray result");
-    assertEquals(expectedFormatted, toBinaryString(toByteArray(expectedFormatted)), "internal test setup: toByteArray/toBinaryString mapping");
+    assertEquals(bits7.split(" ").length, bytes7.length, "internal test setup: toByteArray result size");
+    assertEquals(expectedFormatted, toBinaryString(toByteArray(expectedFormatted)), "internal test setup: toByteArray/toBinaryString roundtrip");
     var destBuf = new byte[bytes7.length*8/7];
     var bytes8 = UrlTranscoder.convertTo8Bit(bytes7, destBuf);
     var actualFormatted = toBinaryString(bytes8);
