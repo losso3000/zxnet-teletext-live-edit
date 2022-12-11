@@ -7,12 +7,9 @@ import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.safari.SafariDriver;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
@@ -187,10 +184,15 @@ public class Main {
       error(String.format("Error creating web driver for %s: %s", type, e));
       return;
     }
+    String lastUrl = null;
     driver.get(editorUrl);
     for (;;) {
       try {
         var url = driver.getCurrentUrl();
+        if (!url.equals(lastUrl)) {
+          log(url);
+          lastUrl = url;
+        }
         byte[] buf = transcoder.transcodeFromUrl(url);
         for (int i = 0; i < 5; i++) {
           out.write(buf);
@@ -221,7 +223,7 @@ public class Main {
         }
       }
       try {
-        Thread.sleep(500L);
+        Thread.sleep(300L);
       } catch (InterruptedException e) {
         // EMPTY
       }

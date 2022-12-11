@@ -21,6 +21,10 @@ To run:
 Alternatively, you can clone this project and start `Main` in your IDE, or build
 everything yourself using Maven.
 
+**Note:** Exiting the browser might by tricky, as the "Are you sure?" dialog interferes with
+the constant querying of the current URL. In that case, exit the main launcher window first and then
+close the browser.
+
 ## Credits
 
 * [Teletext editor](https://zxnet.co.uk/teletext/editor/) by Alistair Cree (ZXGuesser)
