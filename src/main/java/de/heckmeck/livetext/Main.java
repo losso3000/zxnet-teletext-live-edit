@@ -221,7 +221,7 @@ public class Main {
         }
       }
       try {
-        Thread.sleep(1500L);
+        Thread.sleep(500L);
       } catch (InterruptedException e) {
         // EMPTY
       }
