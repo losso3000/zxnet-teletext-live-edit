@@ -53,3 +53,10 @@ To handle reconnects, use a little script to restart the netcat server in a loop
     done
 
 Then run `. LOOP_LISTEN` once.
+
+## Room for improvement
+
+* Respect other parameters contained in URL (page number, flags, region, character set)
+* Configurable refresh time
+* Cursor highlighting (injected Javascript?) – would be cool to work with the TV as the main display directly
+* Screen recording (replay the creation of a Teletext screen, URL is being constantly monitored already)

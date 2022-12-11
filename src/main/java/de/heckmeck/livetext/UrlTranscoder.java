@@ -11,17 +11,17 @@ public class UrlTranscoder {
   private static final int FILLING_HEADER_BYTES = SEND_COLS;
 
   // Data contained in URL, packed in 7 bits per character
-  private byte[] urlDataBuffer = new byte[EDITOR_ROWS * EDITOR_COLS *7/8];
+  private final byte[] urlDataBuffer = new byte[EDITOR_ROWS * EDITOR_COLS * 7 / 8];
 
   // Page with a byte for each character
-  private byte[] pageBuffer = new byte[EDITOR_ROWS * EDITOR_COLS];
+  private final byte[] pageBuffer = new byte[EDITOR_ROWS * EDITOR_COLS];
 
   // Only 24 rows, but with 2 MPAG bytes before each row
-  private byte[] sendBuffer = new byte[SEND_ROWS * SEND_COLS];
+  private final byte[] sendBuffer = new byte[SEND_ROWS * SEND_COLS];
 
-  private byte[] fillingBuffer = new byte[FILLING_HEADER_BYTES];
+  private final byte[] fillingBuffer = new byte[FILLING_HEADER_BYTES];
 
-  private static int[] mpags = {
+  private static final int[] mpags = {
       0x02, 0x15, // magazine 1 row  0
       0xc7, 0x15, // magazine 1 row  1
       0x02, 0x02, // magazine 1 row  2
@@ -48,7 +48,7 @@ public class UrlTranscoder {
       0xc7, 0x9b, // magazine 1 row 23
   };
 
-  private static int[] fillingHeaderTemplate = {
+  private static final int[] fillingHeaderTemplate = {
     0x02, 0x15, 0xea, 0xea, 0x15, 0x15, 0x15, 0x15, 0x02, 0x15, 0x15, 0x15
   };
 
@@ -56,11 +56,7 @@ public class UrlTranscoder {
     byte[] buf7 = extractDataFromUrl(url, urlDataBuffer);
     if (buf7 == null) return null;
     byte[] buf8 = convertTo8Bit(buf7, pageBuffer);
-    for (int i = 0; i < buf8.length; i++) {
-      // buf8[i] = (byte) ('A' + (i % 21));
-    }
-    byte[] sendBuf = convertToSendBuffer(buf8, sendBuffer);
-    return sendBuf;
+    return convertToSendBuffer(buf8, sendBuffer);
   }
 
   public byte[] createFillingHeader(byte[] buf) {
@@ -84,7 +80,6 @@ public class UrlTranscoder {
       .replace('_', '/')
       .replace('-', '+')
       .getBytes();
-    byte[] x = Base64.getDecoder().decode(urlDataBase64);
     Base64.getDecoder().decode(urlDataBase64, buf);
     return buf;
   }
@@ -137,7 +132,7 @@ public class UrlTranscoder {
     }
     // MPAGs for each line
     for (int y = 0; y < SEND_ROWS; y++) {
-      dst[y * SEND_COLS + 0] = (byte) mpags[y * 2 + 0];
+      dst[y * SEND_COLS] = (byte) mpags[y * 2];
       dst[y * SEND_COLS + 1] = (byte) mpags[y * 2 + 1];
     }
     return dst;
