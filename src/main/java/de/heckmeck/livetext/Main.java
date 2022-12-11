@@ -1,26 +1,44 @@
 package de.heckmeck.livetext;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.safari.SafariDriver;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public class Main {
 
   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT);
-  private static String DEFAULT_URL = "https://zxnet.co.uk/teletext/editor/";
+  private static String DEFAULT_URL = "https://zxnet.co.uk/teletext/editor/#0:QIEDFgwQIAPrxuy9FuzT2yrcuTT038kDFcwQBGLN0zZumbcmdUBECBAgQIKmXZl6ZfHRBM09sqCLk09N_JAgQIEBNoeInCKJGjRo0aNGjRo0aNGjRo0aNGjRo0aNGjRo0aNGjRo0aNGhLoECBAgQIECBAgQIECAkgwMECDggQIC6BAgLoECBAgQIECAug1f_____9-_aBAgQICSDf26dvyVAgLoECAvoeLFizY8WNC6DUgQaGCBAg1E0CBggIoHXF3xdsCaBAgYIC-pA4SIEHfm1LoNSBBq_pECDUTULNyQiqar-LtK_JoFCzckL6kCBAgQPVjUug1IECJEtQINRNAgQoCKD86_v9TQmgQIEKAvq6cOHLx14NS6BUsWLFixYsXIECBAgIoESFYkRoECAugQIC6BAgQIECBAgQIEELlv788vJAgQIECClh58MWXly8oECBAgQIECCpWQIECBAgQIECBAgQIECBAgQIECBAgQIECBAgQIECBAgQIECBAgQIAnrxuy9F2Peu661_TLsy9Mvjovy5NPTfyDQLViP1y8-eXkgCTMPXdj0ZeSxBVpTEHTlh3c8e_Jp3Z0CANA2b-fPezYMGCBAgQIECBAgQIECBAgQIECBAgQIECBAgQIECBAgQIECBAgQICZ1QEQIECBAgQIECBBR66cetBT6YeXRAgQIECBAgQE2h4icIokaNGjRo0aNGjRo0aNGjRo0aNGjRo0aNGjRo0aNGjRo0aFAtQU8vRB00ZUGHhw5b-HLTh6ZUGvL5xb8PLIg2YfO_r0QIEC1BF3YcWzKgRc9G_ugx793Tlv2IMe_Jl5okGHdkQIuejf3QIEGflpyIkHTeg2b9-tB13ZMvJB00ZUGjfvyIECBAgQIECBAtQS8vnFvw8siDHv27cO7JzfoKeXKgRY9-7py37EGvL55okCBBww7suxCgQRacNYg6aMu5AxQIECBAgQPUHLLkQdMvjogQIECBAgQIECBBFpw1iDpoy7kFORJjVFrFA9QcsuRBnzeECBAgQIECBAgQIEGXpjXIECBAgQIECBAgQIECBAgQIECBAgQIEC1BZ39UGPDuQYdnfD55oOvPKgh1KUxbaQZt_JB13ZN6FAgQIECBAgQIECBAgQIECBAgQIECBAgQIECBAgQIECBAgQIECA:PS=0:RE=0:zx=BI0";
 
   public static void main(String... args) throws Exception {
     nimbus();
     new MainUI().showInFrame();
+  }
+
+  static enum DriverType {
+    Chrome,
+    Firefox,
+    Safari,
+    Edge,
   }
 
   static class MainUI extends JPanel {
@@ -32,18 +50,24 @@ public class Main {
       JTextField host = new JTextField(20);
       JTextField port = new JTextField(6);
       JTextField url = new JTextField(26);
-      JComboBox<String> driver = new JComboBox<>("Chrome,Firefox".split(","));
+      JComboBox<DriverType> driver = new JComboBox<>(DriverType.values());
       JButton launchButton = new JButton("<html><b>Launch!");
 
+      setLayout(new BorderLayout());
       SpringLayout layout = new SpringLayout();
-      setLayout(layout);
-      // add(url);
+      JPanel configPanel = new JPanel(layout);
+
+      URL logoUrl = getClass().getResource("/logo.png");
+      if (logoUrl != null) {
+        add(new JLabel(new ImageIcon(logoUrl)), BorderLayout.NORTH);
+      }
+
       layout.putConstraint(SpringLayout.WEST, host, 5, SpringLayout.WEST, this);
       layout.putConstraint(SpringLayout.WEST, port, 5, SpringLayout.EAST, host);
-      layout.putConstraint(SpringLayout.EAST, this, 5, SpringLayout.EAST, port);
+      layout.putConstraint(SpringLayout.EAST, configPanel, 5, SpringLayout.EAST, port);
 
-      layout.putConstraint(SpringLayout.NORTH, hostLabel, 5, SpringLayout.NORTH, this);
-      layout.putConstraint(SpringLayout.NORTH, portLabel, 5, SpringLayout.NORTH, this);
+      layout.putConstraint(SpringLayout.NORTH, hostLabel, 5, SpringLayout.NORTH, configPanel);
+      layout.putConstraint(SpringLayout.NORTH, portLabel, 5, SpringLayout.NORTH, configPanel);
 
       layout.putConstraint(SpringLayout.WEST, hostLabel, 2, SpringLayout.WEST, host);
       layout.putConstraint(SpringLayout.WEST, portLabel, 2, SpringLayout.WEST, port);
@@ -65,33 +89,41 @@ public class Main {
       layout.putConstraint(SpringLayout.WEST, launchButton, 0, SpringLayout.WEST, port);
       layout.putConstraint(SpringLayout.EAST, launchButton, 0, SpringLayout.EAST, port);
 
-      layout.putConstraint(SpringLayout.SOUTH, this, 5, SpringLayout.SOUTH, launchButton);
+      layout.putConstraint(SpringLayout.SOUTH, configPanel, 5, SpringLayout.SOUTH, launchButton);
 
-      add(host);
-      add(hostLabel);
-      add(port);
-      add(portLabel);
-      add(urlLabel);
-      add(url);
-      add(driverLabel);
-      add(driver);
-      add(launchButton);
+      configPanel.add(host);
+      configPanel.add(hostLabel);
+      configPanel.add(port);
+      configPanel.add(portLabel);
+      configPanel.add(urlLabel);
+      configPanel.add(url);
+      configPanel.add(driverLabel);
+      configPanel.add(driver);
+      configPanel.add(launchButton);
+      add(configPanel, BorderLayout.CENTER);
 
       host.setText(getPref("host", "127.0.0.1"));
       port.setText(getPref("port", "2000"));
-      url.setText(getPref("url", DEFAULT_URL));
+      url.setText(getPref("editor-url", DEFAULT_URL));
 
       launchButton.addActionListener(e -> {
         storePref("host", host.getText());
         storePref("port", port.getText());
-        storePref("url", url.getText());
+        storePref("editor-url", url.getText());
         flushPrefs();
-        new Thread(() -> launch(host.getText(), port.getText(), url.getText())).start();
+        new Thread(() -> launch(host.getText(), port.getText(), url.getText(), (DriverType) driver.getSelectedItem())).start();
       });
     }
 
     public void showInFrame() {
       JFrame frame = new JFrame("zxnet-teletext-live-edit");
+      Optional.ofNullable(getClass().getResource("/icon.png")).ifPresent(url -> {
+        try {
+          frame.setIconImage(new ImageIcon(url).getImage());
+        } catch (Exception e) {
+          // EMPTY
+        }
+      });
       frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
       frame.setContentPane(this);
       frame.pack();
@@ -130,7 +162,7 @@ public class Main {
     }
   }
 
-  static void launch(String host, String port, String editorUrl) {
+  static void launch(String host, String port, String editorUrl, DriverType type) {
     int portInt;
     try {
       portInt = Integer.parseInt(port);
@@ -148,8 +180,13 @@ public class Main {
       return;
     }
     UrlTranscoder transcoder = new UrlTranscoder();
-    System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
-    ChromeDriver driver = new ChromeDriver();
+    WebDriver driver;
+    try {
+      driver = createWebDriver(type);
+    } catch (Exception e) {
+      error(String.format("Error creating web driver for %s: %s", type, e));
+      return;
+    }
     driver.get(editorUrl);
     for (;;) {
       try {
@@ -178,16 +215,35 @@ public class Main {
           }
         }
         try {
-          Thread.sleep(1000L);
+          Thread.sleep(1500L);
         } catch (InterruptedException ex) {
           // EMPTY
         }
       }
       try {
-        Thread.sleep(500L);
+        Thread.sleep(1500L);
       } catch (InterruptedException e) {
         // EMPTY
       }
+    }
+  }
+
+  static WebDriver createWebDriver(DriverType type) {
+    switch (type) {
+      case Chrome:
+        WebDriverManager.chromedriver().setup();
+        return new ChromeDriver();
+      case Firefox:
+        WebDriverManager.firefoxdriver().setup();
+        return new FirefoxDriver();
+      case Safari:
+        WebDriverManager.safaridriver().setup();
+        return new SafariDriver();
+      case Edge:
+        WebDriverManager.edgedriver().setup();
+        return new EdgeDriver();
+      default:
+        throw new IllegalArgumentException("Not supported: " + type);
     }
   }
 
