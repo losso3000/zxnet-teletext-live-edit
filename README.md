@@ -21,6 +21,12 @@ To run:
 Alternatively, you can clone this project and start `Main` in your IDE, or build
 everything yourself using Maven.
 
+## Credits
+
+* [Teletext editor](https://zxnet.co.uk/teletext/editor/) by Alistair Cree (ZXGuesser)
+* [Teletext inserter](https://github.com/ali1234/raspi-teletext) by Alistair Buxton
+* Web driver fiddling and URL transcoding by Ali- erm, Alex Grupe (Losso)
+
 ## Raspberry Pi setup
 
 * Obtain 4-pin A/V cable
